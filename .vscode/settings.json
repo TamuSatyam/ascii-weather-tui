@@ -1,0 +1,5 @@
+{
+    "clangd.arguments": [
+        "--resource-dir=/usr/lib/llvm-19/lib/clang/19/"
+    ]
+}

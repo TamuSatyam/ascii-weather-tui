@@ -23,6 +23,26 @@ const std::string RAINY = R"(
  ' ' ' ' '
 )";
 
+const std::string SNOWY = R"(
+    .--.
+ .-(    ).
+(___.__)__)
+ * * * * *
+)";
+
+const std::string THUNDERSTORM = R"(
+    .--.
+ .-(    ).
+(___.__)__)
+ ⚡ ⚡ ⚡ ⚡ ⚡
+)";
+
+const std::string MIST = R"(
+  _ - _ - _
+ _ - _ - _ -
+  _ - _ - _
+)";
+
 const std::string UNKNOWN = R"(
     .--.
  .-( ? ).
@@ -34,6 +54,14 @@ std::string getIcon(const std::string &condition) {
       {"Clear", SUNNY},
       {"Cloudy", CLOUDY},
       {"Rain", RAINY},
+      {"Drizzle", RAINY},
+      {"Snow", SNOWY},
+      {"Thunderstorm", THUNDERSTORM},
+      {"Mist", MIST},
+      {"Haze", MIST},
+      {"Fog", MIST},
+      {"Tornado", THUNDERSTORM},
+      {"Squall", THUNDERSTORM},
       {"Unknown", UNKNOWN}};
 
   auto it = iconMap.find(condition);
@@ -60,8 +88,12 @@ std::string getColoredIcon(const std::string &condition) {
     return Colors::YELLOW + icon + Colors::RESET;
   } else if (condition == "Cloudy") {
     return Colors::GRAY + icon + Colors::RESET;
-  } else if (condition == "RAIN") {
+  } else if (condition == "Rain") {
     return Colors::BLUE + icon + Colors::RESET;
+  } else if (condition == "Snow") {
+    return Colors::CYAN + icon + Colors::RESET;
+  } else if (condition == "Thunderstorm") {
+    return Colors::YELLOW + icon + Colors::RESET;
   } else {
     return Colors::WHITE + icon + Colors::RESET;
   }

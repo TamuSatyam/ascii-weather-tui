@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(awt)
+project(ascii-weather-tui)
 
 if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(CMAKE_TOOLCHAIN_FILE "$ENV{HOME}/vcpkg/scripts/buildsystems/vcpkg.cmake"
@@ -24,12 +24,24 @@ find_package(simdjson CONFIG REQUIRED)
 find_package(CLI11 CONFIG REQUIRED)
 find_package(httplib CONFIG REQUIRED)
 
-add_executable(FoolSafe
-        src/main.cpp
+set(SOURCES
+    src/main.cpp
+    src/weather_api.cpp
+    src/ascii_art.cpp
 )
 
-target_link_libraries(FoolSafe PRIVATE
+add_executable(ascii-weather-tui ${SOURCES})
+
+target_link_directories(ascii-weather-tui PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(ascii-weather-tui PRIVATE
         simdjson::simdjson
         CLI11::CLI11
         httplib::httplib
 )
+
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "C++ compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD}")

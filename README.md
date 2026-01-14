@@ -99,8 +99,67 @@ make
 
 ### Display Modes
 
+Minimal Mode
+
+```
+Fetching weather for Vienna...
+
+Vienna
+
+  _ - _ - _
+ _ - _ - _ -
+  _ - _ - _
+
+-7.2℃
+```
+
 Normal Mode (default)
 
 ```
+Fetching weather for Kathmandu...
+
+--------------------------------------------------
+Kathmandu, NP
+--------------------------------------------------
+
+
+  _ - _ - _
+ _ - _ - _ -
+  _ - _ - _
+
+Condition: haze
+Temperature: 8.8℃
+Feels like: 10.1℃
+Humidity: 62%
+
+--------------------------------------------------
+```
+
+Verbose Mode 
 
 ```
+Fetching weather for Muscat...
+
+Weather Report: Muscat, OM
+--------------------------------------------------
+
+    \   /
+     .-.
+---- (  ) ---
+     `-'
+    /   \
+    
+Condition: clear sky
+
+Temperature:
+  Current: 21.1℃
+  Feels like: 21.0℃
+  Min: 21.0℃
+  Max: 21.0℃
+
+Other:
+  Humidity: 76%
+  Wind Speed: 1.5m/s
+--------------------------------------------------
+```
+

@@ -1,8 +1,6 @@
-#include "config.hpp"
+#include "../include/config.hpp"
 #include <fstream>
 #include <iostream>
-#include <iterator>
-#include <optional>
 #include <simdjson.h>
 
 namespace Config {
@@ -49,6 +47,13 @@ std::optional<AppConfig> loadConfig(const std::string &configPath) {
       config.defaultCity = "Kathmandu";
     }
 
+    if (doc["default_units"].error() == simdjson::SUCCESS) {
+      config.defaultUnits =
+          std::string(doc["default_units"]->get_string().value());
+    } else {
+      config.defaultUnits = "metric";
+    }
+
   } catch (const simdjson::simdjson_error &e) {
     std::cerr << "Error: Invalid config format: " << e.what() << std::endl;
 
@@ -64,7 +69,7 @@ bool createDefaultConfig(const std::string &configPath) {
     return false;
   }
   file << R"({
-  "api_key": "your_openweather_api_key_here",
+  "api_key": "your_openweather_api_key",
   "default_city": "Kathmandu",
   "default_units": "metric"
   })";

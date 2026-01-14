@@ -22,6 +22,7 @@ extern const std::string BRIGHT_CYAN;
 enum class DisplayMode { MINIMAL, NORMAL, VERBOSE };
 
 void displayWeather(const WeatherAPI::WeatherData &data,
+                    const std::string &units,
                     DisplayMode mode = DisplayMode::NORMAL,
                     bool useColor = true);
 

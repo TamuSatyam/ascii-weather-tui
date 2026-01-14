@@ -36,9 +36,8 @@ std::string getUnitSymbol(const std::string &units) {
   return (units == "imperial") ? "℉" : "℃";
 }
 
-void displayWeather(const WeatherAPI::WeatherData &data, DisplayMode mode,
-                    bool useColor) {
-  std::string units = (data.temperature > 50) ? "imperial" : "metric";
+void displayWeather(const WeatherAPI::WeatherData &data,
+                    const std::string &units, DisplayMode mode, bool useColor) {
   std::string unitSymbol = getUnitSymbol(units);
 
   std::string icon = useColor ? AsciiArt::getColoredIcon(data.condition)

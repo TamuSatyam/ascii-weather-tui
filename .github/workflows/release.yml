@@ -3,7 +3,7 @@ name: Build and Release
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -25,15 +25,14 @@ jobs:
 
       - name: Install dependencies with vcpkg
         run: |
-          ./vcpkg/vcpkg install simdjson:x64-linux-release cli11:x64-linux-release cpp-httplib[openssl]:x64-linux-release openssl:x64-linux-release
+          ./vcpkg/vcpkg install simdjson cli11 cpp-httplib[openssl] openssl --triplet x64-linux
 
       - name: Build
         run: |
           mkdir build
           cd build
           cmake -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_SHARED_LIBS=OFF \
-                -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++" \
+                -DVCPKG_TARGET_TRIPLET=x64-linux \
                 -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake ..
           make -j$(nproc)
           strip ascii-weather-tui
@@ -68,13 +67,14 @@ jobs:
 
       - name: Install dependencies with vcpkg
         run: |
-          ./vcpkg/vcpkg install simdjson:x64-osx-release cli11:x64-osx-release cpp-httplib[openssl]:x64-osx-release openssl:x64-osx-release
+          ./vcpkg/vcpkg install simdjson cli11 cpp-httplib[openssl] openssl --triplet x64-osx
 
       - name: Build
         run: |
           mkdir build
           cd build
           cmake -DCMAKE_BUILD_TYPE=Release \
+                -DVCPKG_TARGET_TRIPLET=x64-osx \
                 -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake ..
           make -j$(sysctl -n hw.ncpu)
           strip ascii-weather-tui
@@ -105,7 +105,7 @@ jobs:
 
       - name: Install dependencies with vcpkg
         run: |
-          .\vcpkg\vcpkg.exe install simdjson:x64-windows-static cli11:x64-windows-static cpp-httplib[openssl]:x64-windows-static openssl:x64-windows-static
+          .\vcpkg\vcpkg.exe install simdjson cli11 cpp-httplib[openssl] openssl --triplet x64-windows-static
 
       - name: Build
         run: |

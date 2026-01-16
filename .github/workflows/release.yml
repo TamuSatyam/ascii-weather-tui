@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     container: alpine:latest
     steps:
+      - uses: seanmiddleditch/gha-setup-ninja@master
       - name: Install build dependencies
         run: |
           apk add --no-cache ninja-build samurai git cmake make g++ pkgconfig linux-headers curl zip unzip tar perl bash build-base

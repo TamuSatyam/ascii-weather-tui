@@ -28,6 +28,8 @@ jobs:
           ./vcpkg/bootstrap-vcpkg.sh -disableMetrics
 
       - name: Install dependencies with vcpkg
+        env:
+          VCPKG_FORCE_SYSTEM_BINARIES: 1
         run: |
           ./vcpkg/vcpkg install simdjson cli11 cpp-httplib[openssl] openssl
 

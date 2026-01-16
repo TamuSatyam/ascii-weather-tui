@@ -135,7 +135,7 @@ Humidity: 62%
 --------------------------------------------------
 ```
 
-Verbose Mode 
+Verbose Mode
 
 ```
 Fetching weather for Muscat...
@@ -148,7 +148,7 @@ Weather Report: Muscat, OM
 ---- (  ) ---
      `-'
     /   \
-    
+
 Condition: clear sky
 
 Temperature:
@@ -162,4 +162,3 @@ Other:
   Wind Speed: 1.5m/s
 --------------------------------------------------
 ```
-

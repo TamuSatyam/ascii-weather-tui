@@ -5,30 +5,22 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;${CMAKE_FIND_LIBRARY_SUFFIXES}")
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static libs" FORCE)
 
-if(NOT MSVC)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
-    
-    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
-    endif()
+if(UNIX AND NOT APPLE)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
 endif()
 
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static libs" FORCE)
-set(SELECT_CURL_PUBLIC_KEY_PINNING OFF CACHE BOOL "" FORCE)
-
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
-    set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra -Wpedantic -fsanitize=address,undefined")
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native -flto")
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra -Wpedantic")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=x86-64")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG")
-    set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG -flto")
-endif ()
+    set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG")
+endif()
 
-if (NOT CMAKE_BUILD_TYPE)
+if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
-endif ()
+endif()
 
 find_package(simdjson CONFIG REQUIRED)
 find_package(CLI11 CONFIG REQUIRED)
@@ -61,10 +53,10 @@ target_link_libraries(ascii-weather-tui PRIVATE
     OpenSSL::Crypto
 )
 
-if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
     set_property(TARGET ascii-weather-tui PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "C++ compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "C++ compiler: ${CMAKE_CXX_COMPILER_ID}")
 message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD}")

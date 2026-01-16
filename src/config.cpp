@@ -12,10 +12,11 @@ std::optional<AppConfig> loadConfig(const std::string &configPath) {
     std::cerr << "Please create a config.json file with your API key."
               << std::endl;
     std::cerr << "Example format:" << std::endl;
-    std::cerr << R"({
-    "api_key": "your_openweather_api_key",
-    "default_city": "Kathmandu",
-    "default_units": "metric"
+    std::cerr << R"(
+    {
+      "api_key": "your_openweather_api_key",
+      "default_city": "Kathmandu",
+      "default_units": "metric"
     })" << std::endl;
 
     return std::nullopt;

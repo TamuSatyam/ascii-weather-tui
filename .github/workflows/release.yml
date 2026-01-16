@@ -67,14 +67,14 @@ jobs:
 
       - name: Install dependencies with vcpkg
         run: |
-          ./vcpkg/vcpkg install simdjson cli11 cpp-httplib[openssl] openssl --triplet x64-osx
+          ./vcpkg/vcpkg install simdjson cli11 cpp-httplib[openssl] openssl --triplet arm64-osx
 
       - name: Build
         run: |
           mkdir build
           cd build
           cmake -DCMAKE_BUILD_TYPE=Release \
-                -DVCPKG_TARGET_TRIPLET=x64-osx \
+                -DVCPKG_TARGET_TRIPLET=arm64-osx \
                 -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake ..
           make -j$(sysctl -n hw.ncpu)
           strip ascii-weather-tui

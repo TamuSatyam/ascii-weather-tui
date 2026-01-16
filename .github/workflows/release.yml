@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Install build dependencies
         run: |
-          apk add --no-cache ninja-build git cmake make g++ pkgconfig linux-headers curl zip unzip tar perl bash build-base
+          apk add --no-cache ninja git cmake make g++ pkgconfig linux-headers curl zip unzip tar perl bash build-base
 
       - name: Checkout code
         uses: actions/checkout@v4

@@ -11,8 +11,8 @@ curl -L -o external/simdjson.cpp https://github.com/simdjson/simdjson/releases/d
 
 echo "Downloading CLI11..."
 curl -sL https://github.com/CLIUtils/CLI11/archive/refs/tags/v2.4.2.tar.gz | tar xz -C external
-mkdir external/CLI11/CLI11
-mv external/CLI11-2.4.2/include/CLI/* external/CLI11/CLI11
+mkdir external/CLI11/
+mv external/CLI11-2.4.2/include/CLI/* external/CLI11/
 rm -rf external/CLI11-2.4.2
 
 echo "Downloading cpp-httplib"

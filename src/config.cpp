@@ -1,7 +1,7 @@
 #include "../include/config.hpp"
+#include "../external/simdjson.h"
 #include <fstream>
 #include <iostream>
-#include <simdjson.h>
 
 namespace Config {
 std::optional<AppConfig> loadConfig(const std::string &configPath) {

@@ -39,18 +39,18 @@ std::optional<AppConfig> loadConfig(const std::string &configPath) {
   AppConfig config;
 
   try {
-    config.apiKey = std::string(doc["api_key"]->get_string().value());
+    config.apiKey = std::string(doc["api_key"].get_string().value());
 
     if (doc["default_city"].error() == simdjson::SUCCESS) {
       config.defaultCity =
-          std::string(doc["default_city"]->get_string().value());
+          std::string(doc["default_city"].get_string().value());
     } else {
       config.defaultCity = "Kathmandu";
     }
 
     if (doc["default_units"].error() == simdjson::SUCCESS) {
       config.defaultUnits =
-          std::string(doc["default_units"]->get_string().value());
+          std::string(doc["default_units"].get_string().value());
     } else {
       config.defaultUnits = "metric";
     }

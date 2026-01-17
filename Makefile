@@ -1,6 +1,3 @@
-VCPKG_ROOT ?= $(HOME)/vcpkg
-TOOLCHAIN := -DCMAKE_TOOLCHAIN_FILE=$(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake
-
 BUILD_DEBUG := build/debug
 BUILD_RELEASE := build/release
 BUILD_STATIC := build/static
@@ -8,32 +5,43 @@ BUILD_STATIC := build/static
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
     PLATFORM := linux
-    TRIPLET := x64-linux
 else ifeq ($(UNAME_S),Darwin)
     PLATFORM := macos
-    TRIPLET := x64-osx
 else
     PLATFORM := windows
-    TRIPLET := x64-windows-static
 endif
 
 .PHONY: all
-all: release
+all: deps release
+
+.PHONY: deps
+deps:
+	@echo "Downloading dependencies..."
+	@mkdir -p external/CLI11/include/CLI
+	@echo "  - simdjson..."
+	@curl -sL -o external/simdjson.h https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.h
+	@curl -sL -o external/simdjson.cpp https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.cpp
+	@echo "  - CLI11 (full tree)..."
+	@curl -sL https://github.com/CLIUtils/CLI11/archive/refs/tags/v2.4.2.tar.gz | tar xz -C external
+	@mkdir external/CLI11/CLI11
+	@mv external/CLI11-2.4.2/include/CLI/* external/CLI11/CLI11
+	@rm -rf external/CLI11-2.4.2
+	@echo "  - cpp-httplib..."
+	@curl -sL -o external/httplib.h https://raw.githubusercontent.com/yhirose/cpp-httplib/v0.18.3/httplib.h
+	@echo "Dependencies ready"
 
 .PHONY: debug
-debug:
+debug: deps
 	@echo "Building debug configuration..."
-	@cmake -B $(BUILD_DEBUG) $(TOOLCHAIN) \
-		-DCMAKE_BUILD_TYPE=Debug \
-		-DVCPKG_TARGET_TRIPLET=$(TRIPLET)
+	@cmake -B $(BUILD_DEBUG) \
+		-DCMAKE_BUILD_TYPE=Debug
 	@cmake --build $(BUILD_DEBUG)
 
 .PHONY: release
-release:
+release: deps
 	@echo "Building release configuration..."
-	@cmake -B $(BUILD_RELEASE) $(TOOLCHAIN) \
-		-DCMAKE_BUILD_TYPE=Release \
-		-DVCPKG_TARGET_TRIPLET=$(TRIPLET)
+	@cmake -B $(BUILD_RELEASE) \
+		-DCMAKE_BUILD_TYPE=Release
 	@cmake --build $(BUILD_RELEASE)
 
 .PHONY: static
@@ -46,16 +54,15 @@ static:
 		echo "Use: make docker-static"; \
 		exit 1; \
 	fi
+	@$(MAKE) deps
 	@echo "Configuring..."
-	@cmake -B $(BUILD_STATIC) $(TOOLCHAIN) \
+	@cmake -B $(BUILD_STATIC) \
 		-G Ninja \
 		-DCMAKE_BUILD_TYPE=Release \
-		-DVCPKG_TARGET_TRIPLET=$(TRIPLET) \
 		-DCMAKE_C_FLAGS="-static" \
 		-DCMAKE_CXX_FLAGS="-static" \
-		-DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++" \
-		-DBUILD_SHARED_LIBS=OFF \
-		-DOPENSSL_USE_STATIC_LIBS=ON
+		-DCMAKE_EXE_LINKER_FLAGS="-static" \
+		-DBUILD_SHARED_LIBS=OFF
 	@echo "Building..."
 	@cmake --build $(BUILD_STATIC) --parallel $(shell nproc 2>/dev/null || echo 4)
 	@echo "Stripping..."
@@ -78,29 +85,24 @@ docker-static:
 		set -e; \
 		echo "===> Installing dependencies..."; \
 		apk add --no-cache git cmake ninja g++ pkgconfig linux-headers \
-			curl zip unzip tar perl bash build-base \
+			curl bash build-base \
 			openssl-libs-static openssl-dev zlib-static zlib-dev > /dev/null 2>&1; \
-		echo "===> Setting up vcpkg..."; \
-		if [ ! -d "vcpkg" ]; then \
-			git clone --depth 1 https://github.com/Microsoft/vcpkg.git > /dev/null 2>&1; \
-		fi; \
-		export VCPKG_FORCE_SYSTEM_BINARIES=1; \
-		if [ ! -f "vcpkg/vcpkg" ]; then \
-			cd vcpkg && ./bootstrap-vcpkg.sh -disableMetrics > /dev/null 2>&1 && cd ..; \
-		fi; \
-		echo "===> Installing C++ dependencies..."; \
-		./vcpkg/vcpkg install simdjson cli11 cpp-httplib --triplet=x64-linux > /dev/null 2>&1; \
+		echo "===> Downloading C++ dependencies..."; \
+		mkdir -p external/CLI11/CLI11; \
+		curl -sL -o external/simdjson.h https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.h; \
+		curl -sL -o external/simdjson.cpp https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.cpp; \
+		curl -sL https://github.com/CLIUtils/CLI11/archive/refs/tags/v2.4.2.tar.gz | tar xz -C external; \
+		mv external/CLI11-2.4.2/include/CLI/* external/CLI11/CLI11/; \
+		rm -rf external/CLI11-2.4.2; \
+		curl -sL -o external/httplib.h https://raw.githubusercontent.com/yhirose/cpp-httplib/v0.18.3/httplib.h; \
 		echo "===> Building..."; \
 		cmake -S . -B build/static \
 			-G Ninja \
 			-DCMAKE_BUILD_TYPE=Release \
-			-DCMAKE_TOOLCHAIN_FILE=/work/vcpkg/scripts/buildsystems/vcpkg.cmake \
-			-DVCPKG_TARGET_TRIPLET=x64-linux \
 			-DCMAKE_C_FLAGS="-static" \
 			-DCMAKE_CXX_FLAGS="-static" \
-			-DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++" \
-			-DBUILD_SHARED_LIBS=OFF \
-			-DOPENSSL_USE_STATIC_LIBS=ON > /dev/null 2>&1; \
+			-DCMAKE_EXE_LINKER_FLAGS="-static" \
+			-DBUILD_SHARED_LIBS=OFF > /dev/null 2>&1; \
 		cmake --build build/static --parallel $$(nproc) > /dev/null 2>&1; \
 		strip build/static/ascii-weather-tui; \
 		echo "===> Build complete!"; \
@@ -165,6 +167,11 @@ clean:
 	@echo "Cleaning build directories..."
 	@rm -rf build/
 
+.PHONY: clean-all
+clean-all: clean
+	@echo "Cleaning dependencies..."
+	@rm -rf external/
+
 .PHONY: run-debug
 run-debug: debug
 	@./$(BUILD_DEBUG)/ascii-weather-tui
@@ -190,39 +197,20 @@ package: docker-static
 	@cd release && tar -czf ascii-weather-tui-$(PLATFORM)-x64-static.tar.gz ascii-weather-tui
 	@echo "Created: release/ascii-weather-tui-$(PLATFORM)-x64-static.tar.gz"
 	@echo ""
-	@ls -lh release/ascii-weather-tui-$(PLATFORM)-x64-static.tar.gz | awk '{print "Size:", $5}'
+	@ls -lh release/ascii-weather-tui-$(PLATFORM)-x64-static.tar.gz | awk '{print "Size:", $$5}'
 	@echo ""
 	@echo "This binary works on ANY Linux distribution!"
 
-.PHONY: package-compressed
-package-compressed: docker-static
-	@echo "Creating compressed release package (requires UPX)..."
-	@if ! command -v upx &> /dev/null; then \
-		echo "Error: UPX not found. Install with:"; \
-		echo "  Alpine: apk add upx"; \
-		echo "  Ubuntu: sudo apt install upx-ucl"; \
-		echo "  macOS: brew install upx"; \
-		exit 1; \
-	fi
-	@mkdir -p release
-	@cp $(BUILD_STATIC)/ascii-weather-tui release/
-	@echo "Compressing with UPX..."
-	@upx --best --lzma release/ascii-weather-tui
-	@cd release && tar -czf ascii-weather-tui-$(PLATFORM)-x64-static-upx.tar.gz ascii-weather-tui
-	@echo ""
-	@echo "Created: release/ascii-weather-tui-$(PLATFORM)-x64-static-upx.tar.gz"
-	@echo ""
-	@ls -lh release/ascii-weather-tui-$(PLATFORM)-x64-static-upx.tar.gz | awk '{print "Compressed size:", $5}'
-	@echo ""
-	@echo "Note: UPX-compressed binaries have slower startup time"
-
 .PHONY: help
 help:
-	@echo "ASCII Weather TUI Build System"
+	@echo "ASCII Weather TUI Build System (No vcpkg!)"
 	@echo "==========================================="
 	@echo ""
+	@echo "Setup:"
+	@echo "  make deps           - Download dependencies (simdjson, CLI11, httplib)"
+	@echo ""
 	@echo "Standard Builds:"
-	@echo "  make                - Build standard release"
+	@echo "  make                - Build release (downloads deps automatically)"
 	@echo "  make debug          - Build debug version"
 	@echo "  make release        - Build release version"
 	@echo ""
@@ -236,9 +224,9 @@ help:
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make clean          - Remove build artifacts"
+	@echo "  make clean-all      - Remove build artifacts AND dependencies"
 	@echo "  make run-debug      - Build and run debug"
 	@echo "  make run-release    - Build and run release"
 	@echo "  make run-static     - Build and run static"
-	@echo "  make package        - Create release tarball (~9-10 MB)"
-	@echo "  make package-compressed - Create UPX-compressed tarball (~3-4 MB)"
+	@echo "  make package        - Create release tarball"
 	@echo "  make format         - Format code"

@@ -161,3 +161,4 @@ build/
 .cache/
 config.json
 bin/
+external/

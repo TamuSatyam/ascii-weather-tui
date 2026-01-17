@@ -1,7 +1,7 @@
 #include "../include/config.hpp"
 #include "../include/display.hpp"
 #include "../include/weather_api.hpp"
-#include <CLI/CLI.hpp>
+#include "CLI11/CLI11/CLI.hpp"
 #include <string>
 
 int main(int argc, char **argv) {

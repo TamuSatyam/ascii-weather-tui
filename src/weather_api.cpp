@@ -66,19 +66,19 @@ std::optional<WeatherData> fetchWeather(const std::string &city,
     auto doc = parser.parse(response->body);
 
     WeatherData data;
-    data.city = std::string(doc["name"]->get_string().value());
-    data.country = std::string(doc["sys"]["country"]->get_string().value());
+    data.city = std::string(doc["name"].get_string().value());
+    data.country = std::string(doc["sys"]["country"].get_string().value());
     data.condition =
-        std::string(doc["weather"]->at(0)["main"]->get_string().value());
+        std::string(doc["weather"].at(0)["main"].get_string().value());
     data.description =
-        std::string(doc["weather"]->at(0)["description"]->get_string().value());
-    data.temperature = doc["main"]["feels_like"]->get_double().value();
-    data.feelsLike = doc["main"]["temp"]->get_double().value();
-    data.tempMin = doc["main"]["temp_min"]->get_double().value();
-    data.tempMax = doc["main"]["temp_max"]->get_double().value();
-    data.windSpeed = doc["wind"]["speed"]->get_double().value();
+        std::string(doc["weather"].at(0)["description"].get_string().value());
+    data.temperature = doc["main"]["feels_like"].get_double().value();
+    data.feelsLike = doc["main"]["temp"].get_double().value();
+    data.tempMin = doc["main"]["temp_min"].get_double().value();
+    data.tempMax = doc["main"]["temp_max"].get_double().value();
+    data.windSpeed = doc["wind"]["speed"].get_double().value();
     data.humidity =
-        static_cast<int>(doc["main"]["humidity"]->get_int64().value());
+        static_cast<int>(doc["main"]["humidity"].get_int64().value());
 
     return data;
   } catch (const simdjson::simdjson_error &e) {

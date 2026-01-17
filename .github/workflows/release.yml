@@ -12,147 +12,151 @@ jobs:
     container:
       image: alpine:latest
     steps:
-      - name: Install build dependencies
+      - name: Install dependencies
         run: |
-          apk add --no-cache \
-            ninja git cmake g++ pkgconfig linux-headers \
+          apk add --no-cache git cmake ninja g++ pkgconfig linux-headers \
             curl zip unzip tar perl bash build-base \
-            libc6-compat gcompat
+            openssl-libs-static openssl-dev zlib-static zlib-dev
 
-      - name: Checkout code
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup vcpkg
+        env:
+          VCPKG_FORCE_SYSTEM_BINARIES: 1
+        run: |
+          git clone --depth 1 https://github.com/Microsoft/vcpkg.git
+          ./vcpkg/bootstrap-vcpkg.sh -disableMetrics
+
+      - name: Install C++ dependencies
+        env:
+          VCPKG_FORCE_SYSTEM_BINARIES: 1
+        run: |
+          ./vcpkg/vcpkg install simdjson cli11 cpp-httplib --triplet=x64-linux
+
+      - name: Build
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake \
+            -DVCPKG_TARGET_TRIPLET=x64-linux \
+            -DCMAKE_C_FLAGS="-static" \
+            -DCMAKE_CXX_FLAGS="-static" \
+            -DCMAKE_EXE_LINKER_FLAGS="-static" \
+            -DBUILD_SHARED_LIBS=OFF
+          cmake --build build --parallel $(nproc)
+          strip build/ascii-weather-tui
+
+      - name: Package
+        run: |
+          mkdir -p release
+          cp build/ascii-weather-tui release/
+          cd release
+          tar -czf ascii-weather-tui-linux-x64-static.tar.gz ascii-weather-tui
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-x64
+          path: release/ascii-weather-tui-linux-x64-static.tar.gz
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: brew install cmake ninja openssl
+
+      - name: Setup vcpkg
+        run: |
+          git clone --depth 1 https://github.com/Microsoft/vcpkg.git
+          ./vcpkg/bootstrap-vcpkg.sh -disableMetrics
+
+      - name: Install C++ dependencies
+        run: ./vcpkg/vcpkg install simdjson cli11 cpp-httplib[openssl] openssl
+
+      - name: Build
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
+          cmake --build build --parallel $(sysctl -n hw.ncpu)
+          strip build/ascii-weather-tui
+
+      - name: Package
+        run: |
+          mkdir -p release
+          cp build/ascii-weather-tui release/
+          cd release
+          tar -czf ascii-weather-tui-macos-universal.tar.gz ascii-weather-tui
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-universal
+          path: release/ascii-weather-tui-macos-universal.tar.gz
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup vcpkg
         run: |
-          git clone https://github.com/Microsoft/vcpkg.git
-          ./vcpkg/bootstrap-vcpkg.sh -disableMetrics
+          git clone --depth 1 https://github.com/Microsoft/vcpkg.git
+          .\vcpkg\bootstrap-vcpkg.bat -disableMetrics
 
-      - name: Install dependencies with vcpkg
-        env:
-          VCPKG_FORCE_SYSTEM_BINARIES: 1
+      - name: Install C++ dependencies
         run: |
-          ./vcpkg/vcpkg install \
-            simdjson cli11 cpp-httplib[openssl] openssl
+          .\vcpkg\vcpkg.exe install simdjson cli11 cpp-httplib[openssl] openssl --triplet=x64-windows-static
 
       - name: Build
         run: |
-          cmake -S . -B build \
-            -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DVCPKG_TARGET_TRIPLET=x64-linux-musl \
-            -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake \
-            -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++"
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}\vcpkg\scripts\buildsystems\vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x64-windows-static `
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+          cmake --build build --config Release --parallel
 
-          cmake --build build --parallel $(nproc)
+      - name: Package
+        run: |
+          mkdir release
+          copy build\Release\ascii-weather-tui.exe release\
+          cd release
+          Compress-Archive -Path ascii-weather-tui.exe -DestinationPath ascii-weather-tui-windows-x64-static.zip
 
-  #     - name: Create tarball
-  #       run: |
-  #         mkdir -p release
-  #         cp build/ascii-weather-tui release/
-  #         cd release
-  #         tar -czf ascii-weather-tui-linux-x64.tar.gz ascii-weather-tui
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64
+          path: release/ascii-weather-tui-windows-x64-static.zip
 
-  #     - name: Upload artifact
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: linux-x64
-  #         path: release/ascii-weather-tui-linux-x64.tar.gz
+  release:
+    needs: [build-linux, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
 
-  # build-macos:
-  #   runs-on: macos-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-
-  #     - name: Install system dependencies
-  #       run: |
-  #         brew install cmake openssl
-
-  #     - name: Setup vcpkg
-  #       run: |
-  #         git clone https://github.com/Microsoft/vcpkg.git
-  #         ./vcpkg/bootstrap-vcpkg.sh
-
-  #     - name: Install dependencies with vcpkg
-  #       run: |
-  #         ./vcpkg/vcpkg install simdjson cli11 cpp-httplib[openssl] openssl
-
-  #     - name: Build
-  #       run: |
-  #         mkdir build
-  #         cd build
-  #         cmake -DCMAKE_BUILD_TYPE=Release \
-  #               -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake ..
-  #         make -j$(sysctl -n hw.ncpu)
-  #         strip ascii-weather-tui
-
-  #     - name: Create tarball
-  #       run: |
-  #         mkdir -p release
-  #         cp build/ascii-weather-tui release/
-  #         cd release
-  #         tar -czf ascii-weather-tui-macos-arm64.tar.gz ascii-weather-tui
-
-  #     - name: Upload artifact
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: macos-arm64
-  #         path: release/ascii-weather-tui-macos-arm64.tar.gz
-
-  # build-windows:
-  #   runs-on: windows-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-
-  #     - name: Setup vcpkg
-  #       run: |
-  #         git clone https://github.com/Microsoft/vcpkg.git
-  #         .\vcpkg\bootstrap-vcpkg.bat
-
-  #     - name: Install dependencies with vcpkg
-  #       run: |
-  #         .\vcpkg\vcpkg.exe install simdjson cli11 cpp-httplib[openssl] openssl
-
-  #     - name: Build
-  #       run: |
-  #         mkdir build
-  #         cd build
-  #         cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}\vcpkg\scripts\buildsystems\vcpkg.cmake -G "Visual Studio 17 2022" -A x64 ..
-  #         cmake --build . --config Release
-
-  #     - name: Create zip
-  #       run: |
-  #         mkdir release
-  #         copy build\Release\ascii-weather-tui.exe release\
-  #         copy vcpkg\installed\x64-windows\bin\*.dll release\ 2>$null
-  #         cd release
-  #         Compress-Archive -Path * -DestinationPath ascii-weather-tui-windows-x64.zip
-
-  #     - name: Upload artifact
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: windows-x64
-  #         path: release/ascii-weather-tui-windows-x64.zip
-
-  # create-release:
-  #   needs: [build-linux, build-macos, build-windows]
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: write
-  #   steps:
-  #     - name: Download all artifacts
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         path: artifacts
-
-  #     - name: Create Release
-  #       uses: softprops/action-gh-release@v1
-  #       with:
-  #         files: |
-  #           artifacts/linux-x64/ascii-weather-tui-linux-x64.tar.gz
-  #         draft: false
-  #         prerelease: false
-  #         generate_release_notes: true
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/linux-x64/ascii-weather-tui-linux-x64-static.tar.gz
+            artifacts/macos-universal/ascii-weather-tui-macos-universal.tar.gz
+            artifacts/windows-x64/ascii-weather-tui-windows-x64-static.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

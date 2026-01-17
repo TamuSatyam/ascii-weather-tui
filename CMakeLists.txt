@@ -6,6 +6,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static libs" FORCE)
+set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+
+if(WIN32)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    add_compile_definitions(_WIN32_WINNT=0x0601)
+endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra -Wpedantic")
@@ -22,6 +28,7 @@ find_package(simdjson CONFIG REQUIRED)
 find_package(CLI11 CONFIG REQUIRED)
 find_package(httplib CONFIG REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(Threads REQUIRED)
 
 set(SOURCES
     src/main.cpp
@@ -48,8 +55,13 @@ target_link_libraries(ascii-weather-tui PRIVATE
     OpenSSL::SSL
     OpenSSL::Crypto
     Threads::Threads
-    ${CMAKE_DL_LIBS}
 )
+
+if(WIN32)
+    target_link_libraries(ascii-weather-tui PRIVATE ws2_32 crypt32)
+elseif(UNIX AND NOT APPLE)
+    target_link_libraries(ascii-weather-tui PRIVATE ${CMAKE_DL_LIBS})
+endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     set_property(TARGET ascii-weather-tui PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)

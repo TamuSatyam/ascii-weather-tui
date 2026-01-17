@@ -33,6 +33,7 @@ add_executable(ascii-weather-tui ${SOURCES})
 target_include_directories(ascii-weather-tui PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/external
+    ${CMAKE_SOURCE_DIR}/external/CLI11
 )
 
 target_compile_definitions(ascii-weather-tui PRIVATE

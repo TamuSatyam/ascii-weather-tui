@@ -1,9 +1,9 @@
 #include "../include/weather_api.hpp"
+#include "../external/httplib.h"
+#include "../external/simdjson.h"
 #include <exception>
-#include <httplib.h>
 #include <iostream>
 #include <optional>
-#include <simdjson.h>
 
 namespace WeatherAPI {
 std::optional<WeatherData> fetchWeather(const std::string &city,

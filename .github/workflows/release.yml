@@ -31,7 +31,7 @@ jobs:
 
           echo "Downloading CLI11..."
           curl -sL https://github.com/CLIUtils/CLI11/archive/refs/tags/v2.4.2.tar.gz | tar xz -C external
-          mv external/CLI11-2.4.2/include/CLI/* external/CLI11/
+          mv external/CLI11-2.4.2/include/CLI/* external/CLI11/include/CLI/
           rm -rf external/CLI11-2.4.2
 
           echo "Downloading cpp-httplib..."
@@ -55,11 +55,11 @@ jobs:
           echo ""
           echo "Checking dynamic dependencies:"
           if ldd build/ascii-weather-tui 2>&1 | grep -q "not a dynamic executable"; then
-            echo "SUCCESS: Binary is fully static!"
+            echo "✓ SUCCESS: Binary is fully static!"
           elif ldd build/ascii-weather-tui 2>&1 | grep -q "statically linked"; then
-            echo "SUCCESS: Binary is statically linked!"
+            echo "✓ SUCCESS: Binary is statically linked!"
           else
-            echo "FAILED: Binary has dynamic dependencies:"
+            echo "✗ FAILED: Binary has dynamic dependencies:"
             ldd build/ascii-weather-tui || true
             exit 1
           fi
@@ -88,11 +88,11 @@ jobs:
 
       - name: Download dependencies
         run: |
-          mkdir -p external/CLI11
+          mkdir -p external/CLI
 
           curl -L -o external/simdjson.h https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.h
           curl -L -o external/simdjson.cpp https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.cpp
-          curl -L -o external/CL11I/CLI.hpp https://raw.githubusercontent.com/CLIUtils/CLI11/v2.4.2/include/CLI/CLI.hpp
+          curl -L -o external/CLI/CLI.hpp https://raw.githubusercontent.com/CLIUtils/CLI11/v2.4.2/include/CLI/CLI.hpp
           curl -L -o external/httplib.h https://raw.githubusercontent.com/yhirose/cpp-httplib/v0.18.3/httplib.h
 
       - name: Build
@@ -139,7 +139,7 @@ jobs:
           Write-Host "Downloading CLI11..."
           Invoke-WebRequest -Uri "https://github.com/CLIUtils/CLI11/archive/refs/tags/v2.4.2.tar.gz" -OutFile "cli11.tar.gz"
           tar -xzf cli11.tar.gz -C external
-          Move-Item -Path external/CLI11-2.4.2/include/CLI/* -Destination external/CLI11/
+          Move-Item -Path external/CLI11-2.4.2/include/CLI/* -Destination external/CLI11/include/CLI/
           Remove-Item -Recurse -Force external/CLI11-2.4.2
           Remove-Item cli11.tar.gz
 

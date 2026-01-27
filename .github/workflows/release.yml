@@ -7,75 +7,45 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-linux-static:
+  build-linux:
     runs-on: ubuntu-latest
-    container:
-      image: alpine:latest
     steps:
-      - name: Install dependencies
-        run: |
-          apk add --no-cache git cmake ninja g++ pkgconfig linux-headers \
-            curl bash build-base \
-            openssl-libs-static openssl-dev zlib-static zlib-dev \
-            libssh2-static libssh2-dev
-
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build libssl-dev g++
+
       - name: Download dependencies
         run: |
-          mkdir -p external/CLI11/include/CLI
-
-          echo "Downloading simdjson..."
+          mkdir -p external/CLI11
           curl -sL -o external/simdjson.h https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.h
           curl -sL -o external/simdjson.cpp https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.cpp
-
-          echo "Downloading CLI11..."
           curl -sL https://github.com/CLIUtils/CLI11/archive/refs/tags/v2.4.2.tar.gz | tar xz -C external
-          mv external/CLI11-2.4.2/include/CLI/* external/CLI11/include/CLI/
+          mv external/CLI11-2.4.2/include/CLI external/CLI11/CLI
           rm -rf external/CLI11-2.4.2
-
-          echo "Downloading cpp-httplib..."
           curl -sL -o external/httplib.h https://raw.githubusercontent.com/yhirose/cpp-httplib/v0.18.3/httplib.h
 
       - name: Build
         run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DOPENSSL_USE_STATIC_LIBS=TRUE \
-            -DCMAKE_EXE_LINKER_FLAGS="-static" \
-            -DBUILD_SHARED_LIBS=OFF
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build --parallel $(nproc)
           strip build/ascii-weather-tui
-
-      - name: Verify static binary
-        run: |
-          echo "File info:"
-          file build/ascii-weather-tui
-          echo ""
-          echo "Checking dynamic dependencies:"
-          if ldd build/ascii-weather-tui 2>&1 | grep -q "not a dynamic executable"; then
-            echo "SUCCESS: Binary is fully static!"
-          elif ldd build/ascii-weather-tui 2>&1 | grep -q "statically linked"; then
-            echo "SUCCESS: Binary is statically linked!"
-          else
-            echo "FAILED: Binary has dynamic dependencies:"
-            ldd build/ascii-weather-tui || true
-            exit 1
-          fi
 
       - name: Package
         run: |
           mkdir -p release
           cp build/ascii-weather-tui release/
           cd release
-          tar -czf ascii-weather-tui-linux-x64-static.tar.gz ascii-weather-tui
+          tar -czf ascii-weather-tui-linux-x64.tar.gz ascii-weather-tui
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: linux-x64-static
-          path: release/ascii-weather-tui-linux-x64-static.tar.gz
+          name: linux-x64
+          path: release/ascii-weather-tui-linux-x64.tar.gz
 
   build-macos:
     runs-on: macos-latest
@@ -88,14 +58,13 @@ jobs:
 
       - name: Download dependencies
         run: |
-          mkdir -p external/CLI11/include/CLI
-
-          curl -L -o external/simdjson.h https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.h
+          mkdir -p external/CLI11
+          curl -sL -o external/simdjson.h https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.h
+          curl -sL -o external/simdjson.cpp https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.cpp
           curl -sL https://github.com/CLIUtils/CLI11/archive/refs/tags/v2.4.2.tar.gz | tar xz -C external
-          mv external/CLI11-2.4.2/include/CLI/* external/CLI11/include/CLI/
+          mv external/CLI11-2.4.2/include/CLI external/CLI11/CLI
           rm -rf external/CLI11-2.4.2
-          curl -L -o external/CLI/CLI.hpp https://raw.githubusercontent.com/CLIUtils/CLI11/v2.4.2/include/CLI/CLI.hpp
-          curl -L -o external/httplib.h https://raw.githubusercontent.com/yhirose/cpp-httplib/v0.18.3/httplib.h
+          curl -sL -o external/httplib.h https://raw.githubusercontent.com/yhirose/cpp-httplib/v0.18.3/httplib.h
 
       - name: Build
         run: |
@@ -125,26 +94,24 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install OpenSSL
-        run: |
-          choco install openssl -y
-          refreshenv
+        run: choco install openssl -y
 
       - name: Download dependencies
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path external/CLI11/include/CLI
-
+          New-Item -ItemType Directory -Force -Path external/CLI11
+          
           Write-Host "Downloading simdjson..."
           Invoke-WebRequest -Uri "https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.h" -OutFile "external/simdjson.h"
           Invoke-WebRequest -Uri "https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.cpp" -OutFile "external/simdjson.cpp"
-
+          
           Write-Host "Downloading CLI11..."
           Invoke-WebRequest -Uri "https://github.com/CLIUtils/CLI11/archive/refs/tags/v2.4.2.tar.gz" -OutFile "cli11.tar.gz"
           tar -xzf cli11.tar.gz -C external
-          Move-Item -Path external/CLI11-2.4.2/include/CLI/* -Destination external/CLI11/include/CLI/
+          Move-Item -Path external/CLI11-2.4.2/include/CLI -Destination external/CLI11/CLI
           Remove-Item -Recurse -Force external/CLI11-2.4.2
           Remove-Item cli11.tar.gz
-
+          
           Write-Host "Downloading cpp-httplib..."
           Invoke-WebRequest -Uri "https://raw.githubusercontent.com/yhirose/cpp-httplib/v0.18.3/httplib.h" -OutFile "external/httplib.h"
 
@@ -152,7 +119,7 @@ jobs:
         run: |
           cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
             -DCMAKE_BUILD_TYPE=Release `
-            -DOPENSSL_ROOT_DIR="C:/Program Files/OpenSSL"
+            -DOPENSSL_ROOT_DIR="C:/Program Files/OpenSSL-Win64"
           cmake --build build --config Release --parallel
 
       - name: Package
@@ -169,7 +136,7 @@ jobs:
           path: release/ascii-weather-tui-windows-x64.zip
 
   release:
-    needs: [build-linux-static, build-macos, build-windows]
+    needs: [build-linux, build-macos, build-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -183,7 +150,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            artifacts/linux-x64-static/ascii-weather-tui-linux-x64-static.tar.gz
+            artifacts/linux-x64/ascii-weather-tui-linux-x64.tar.gz
             artifacts/macos/ascii-weather-tui-macos-*.tar.gz
             artifacts/windows-x64/ascii-weather-tui-windows-x64.zip
           draft: false

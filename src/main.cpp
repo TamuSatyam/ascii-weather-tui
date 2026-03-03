@@ -1,7 +1,10 @@
-#include "../external/CLI11/include/CLI/CLI.hpp"
 #include "../include/config.hpp"
 #include "../include/display.hpp"
 #include "../include/weather_api.hpp"
+
+#include <CLI/CLI.hpp>
+#include <httplib.h>
+#include <simdjson.h>
 #include <string>
 
 int main(int argc, char **argv) {

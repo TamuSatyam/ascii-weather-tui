@@ -1,6 +1,7 @@
 #pragma once
 
 #include "weather_api.hpp"
+
 #include <string>
 
 namespace Display {

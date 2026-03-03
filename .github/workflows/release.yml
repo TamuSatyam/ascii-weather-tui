@@ -49,9 +49,6 @@ jobs:
         with:
           name: linux-x64
           path: release/ascii-weather-tui-linux-x64.tar.gz
-
-  # ... build-macos and build-windows stay largely the same as they 
-  # don't suffer from the glibc versioning issue ...
   
   build-macos:
     runs-on: macos-latest

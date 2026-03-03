@@ -1,4 +1,4 @@
-name: Build & Release
+name: Cross-Platform Build
 
 on:
   push:
@@ -13,29 +13,27 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - name: Checkout Repository
+    - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Install SSL (Linux)
+    - name: Install System Dependencies (Linux)
       if: runner.os == 'Linux'
       run: sudo apt-get update && sudo apt-get install -y libssl-dev
 
-    - name: Clone Full Dependencies
+    - name: Clone Full Packages
       shell: bash
       run: |
         mkdir -p external
-        # Clone the entire source for each package
         git clone --depth 1 https://github.com/CLIUtils/CLI11.git external/CLI11
-        git clone --depth 1 https://github.com/yhirose/cpp-httplib.git external/
-        git clone --depth 1 https://github.com/simdjson/simdjson.git external/
+        git clone --depth 1 https://github.com/yhirose/cpp-httplib.git external/cpp-httplib
+        git clone --depth 1 https://github.com/simdjson/simdjson.git external/simdjson
 
-    - name: Configure CMake
-      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+    - name: Build Project
+      run: |
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release
 
-    - name: Build
-      run: cmake --build build --config Release
-
-    - name: Upload Artifacts
+    - name: Upload Binary
       uses: actions/upload-artifact@v4
       with:
         name: weather-${{ matrix.os }}

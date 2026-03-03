@@ -16,7 +16,7 @@ set(SOURCES
     src/weather_api.cpp
     src/ascii_art.cpp
     src/display.cpp
-    external/simdjson/simdjson.cpp
+    external/simdjson.cpp
 )
 
 add_executable(ascii-weather-tui ${SOURCES})

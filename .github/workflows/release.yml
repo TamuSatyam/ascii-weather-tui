@@ -25,7 +25,6 @@ jobs:
       run: |
         mkdir -p external/CLI11/include/CLI
         mkdir -p external/simdjson
-        # Download exact files needed for the include paths in your code
         curl -L https://github.com/CLIUtils/CLI11/releases/download/v2.3.2/CLI11.hpp -o external/CLI11/include/CLI/CLI.hpp
         curl -L https://raw.githubusercontent.com/yhirose/cpp-httplib/master/httplib.h -o external/httplib.h
         curl -L https://raw.githubusercontent.com/simdjson/simdjson/master/singleheader/simdjson.h -o external/simdjson/simdjson.h

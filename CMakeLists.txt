@@ -30,6 +30,7 @@ set(SOURCES
 
 add_executable(ascii-weather-tui ${SOURCES})
 
+
 target_include_directories(ascii-weather-tui PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/external

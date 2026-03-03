@@ -16,22 +16,21 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          # musl-tools provides musl-gcc for static linking
           sudo apt-get install -y cmake ninja-build libssl-dev g++ musl-tools
+          chmod +x deps.sh
+          ./deps.sh
 
-      - name: Download dependencies
-        run: |
-          mkdir -p external/CLI11
-          curl -sL -o external/simdjson.h https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.h
-          curl -sL -o external/simdjson.cpp https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.cpp
-          curl -sL https://github.com/CLIUtils/CLI11/archive/refs/tags/v2.4.2.tar.gz | tar xz -C external
-          mv external/CLI11-2.4.2/include/CLI external/CLI11/CLI
-          curl -sL -o external/httplib.h https://raw.githubusercontent.com/yhirose/cpp-httplib/v0.18.3/httplib.h
+      # - name: Download dependencies
+      #   run: |
+      #     mkdir -p external/CLI11
+      #     curl -sL -o external/simdjson.h https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.h
+      #     curl -sL -o external/simdjson.cpp https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.cpp
+      #     curl -sL https://github.com/CLIUtils/CLI11/archive/refs/tags/v2.4.2.tar.gz | tar xz -C external
+      #     mv external/CLI11-2.4.2/include/CLI external/CLI11/CLI
+      #     curl -sL -o external/httplib.h https://raw.githubusercontent.com/yhirose/cpp-httplib/v0.18.3/httplib.h
 
       - name: Build (Static)
         run: |
-          # We use -static and point to musl-gcc if possible, 
-          # or use standard GCC with static flags.
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++" \

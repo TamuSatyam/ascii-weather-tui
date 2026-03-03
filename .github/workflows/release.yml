@@ -1,6 +1,10 @@
 name: Build & Release
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   build:
@@ -13,18 +17,29 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Fetch Deps (Unix)
+    - name: Install System Dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libssl-dev
+
+    - name: Fetch Dependencies (Unix)
       if: runner.os != 'Windows'
       run: |
         chmod +x deps.sh
         ./deps.sh
+        # Force check if files exist to fail early if script failed
+        ls -R external/
 
-    - name: Fetch Deps (Windows)
+    - name: Fetch Dependencies (Windows)
       if: runner.os == 'Windows'
-      run: bash ./deps.sh
+      shell: bash
+      run: |
+        ./deps.sh
+        ls -R external/
 
     - name: Configure CMake
-      run: cmake -S . -B build
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 
     - name: Build
       run: cmake --build build --config Release
@@ -32,7 +47,7 @@ jobs:
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: weather-tui-${{ matrix.os }}
+        name: ascii-weather-${{ matrix.os }}
         path: |
           build/ascii-weather-tui
           build/Release/ascii-weather-tui.exe

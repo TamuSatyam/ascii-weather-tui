@@ -1,139 +1,38 @@
-name: Build and Release
+name: Build & Release
 
-on:
-  push:
-    tags:
-      - "v*"
-  workflow_dispatch:
+on: [push, pull_request]
 
 jobs:
-  build-linux:
-    runs-on: ubuntu-latest
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build libssl-dev g++ musl-tools
-          chmod +x deps.sh
-          ./deps.sh
+    - name: Fetch Deps (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        chmod +x deps.sh
+        ./deps.sh
 
-      # - name: Download dependencies
-      #   run: |
-      #     mkdir -p external/CLI11
-      #     curl -sL -o external/simdjson.h https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.h
-      #     curl -sL -o external/simdjson.cpp https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.cpp
-      #     curl -sL https://github.com/CLIUtils/CLI11/archive/refs/tags/v2.4.2.tar.gz | tar xz -C external
-      #     mv external/CLI11-2.4.2/include/CLI external/CLI11/CLI
-      #     curl -sL -o external/httplib.h https://raw.githubusercontent.com/yhirose/cpp-httplib/v0.18.3/httplib.h
+    - name: Fetch Deps (Windows)
+      if: runner.os == 'Windows'
+      run: bash ./deps.sh
 
-      - name: Build (Static)
-        run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++" \
-            -DOPENSSL_USE_STATIC_LIBS=TRUE
-          cmake --build build --parallel $(nproc)
-          strip build/ascii-weather-tui
+    - name: Configure CMake
+      run: cmake -S . -B build
 
-      - name: Package
-        run: |
-          mkdir -p release
-          tar -czf release/ascii-weather-tui-linux-x64.tar.gz -C build ascii-weather-tui
+    - name: Build
+      run: cmake --build build --config Release
 
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-x64
-          path: release/ascii-weather-tui-linux-x64.tar.gz
-  
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install dependencies
-        run: brew install cmake ninja openssl
-      - name: Download dependencies
-        run: |
-          mkdir -p external/CLI11
-          curl -sL -o external/simdjson.h https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.h
-          curl -sL -o external/simdjson.cpp https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.cpp
-          curl -sL https://github.com/CLIUtils/CLI11/archive/refs/tags/v2.4.2.tar.gz | tar xz -C external
-          mv external/CLI11-2.4.2/include/CLI external/CLI11/CLI
-          curl -sL -o external/httplib.h https://raw.githubusercontent.com/yhirose/cpp-httplib/v0.18.3/httplib.h
-      - name: Build
-        run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DOPENSSL_ROOT_DIR=$(brew --prefix openssl) \
-            -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++"
-          cmake --build build --parallel $(sysctl -n hw.ncpu)
-          strip build/ascii-weather-tui
-      - name: Package
-        run: |
-          mkdir -p release
-          tar -czf release/ascii-weather-tui-macos-$(uname -m).tar.gz -C build ascii-weather-tui
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos
-          path: release/ascii-weather-tui-macos-*.tar.gz
-
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install OpenSSL
-        run: choco install openssl -y
-      - name: Download dependencies
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path external/CLI11
-          Invoke-WebRequest -Uri "https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.h" -OutFile "external/simdjson.h"
-          Invoke-WebRequest -Uri "https://github.com/simdjson/simdjson/releases/download/v3.11.6/simdjson.cpp" -OutFile "external/simdjson.cpp"
-          Invoke-WebRequest -Uri "https://github.com/CLIUtils/CLI11/archive/refs/tags/v2.4.2.tar.gz" -OutFile "cli11.tar.gz"
-          tar -xzf cli11.tar.gz -C external
-          Move-Item -Path external/CLI11-2.4.2/include/CLI -Destination external/CLI11/CLI
-          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/yhirose/cpp-httplib/v0.18.3/httplib.h" -OutFile "external/httplib.h"
-      - name: Build
-        run: |
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
-            -DCMAKE_BUILD_TYPE=Release `
-            -DOPENSSL_ROOT_DIR="C:/Program Files/OpenSSL-Win64"
-          cmake --build build --config Release --parallel
-      - name: Package
-        run: |
-          mkdir release
-          Compress-Archive -Path build\Release\ascii-weather-tui.exe -DestinationPath release\ascii-weather-tui-windows-x64.zip
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-x64
-          path: release/ascii-weather-tui-windows-x64.zip
-
-  release:
-    needs: [build-linux, build-macos, build-windows]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          merge-multiple: true
-
-      - name: Create release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            ascii-weather-tui-linux-x64.tar.gz
-            ascii-weather-tui-macos-*.tar.gz
-            ascii-weather-tui-windows-x64.zip
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: weather-tui-${{ matrix.os }}
+        path: |
+          build/ascii-weather-tui
+          build/Release/ascii-weather-tui.exe

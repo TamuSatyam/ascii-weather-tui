@@ -23,7 +23,10 @@ jobs:
 
     - name: Build
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+        cmake -S . -B build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+          -DCMAKE_POLICY_DEFAULT_CMP0048=NEW
         cmake --build build --config Release
 
     - name: Upload

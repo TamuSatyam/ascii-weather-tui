@@ -4,8 +4,6 @@ project(ascii-weather-tui)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
-
 include(FetchContent)
 
 FetchContent_Declare(cli11 GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git GIT_TAG v2.3.2)

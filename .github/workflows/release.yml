@@ -13,22 +13,21 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - name: Checkout code
+    - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Install OpenSSL (Linux)
+    - name: Install SSL (Linux)
       if: runner.os == 'Linux'
       run: sudo apt-get update && sudo apt-get install -y libssl-dev
 
-    - name: Setup Dependencies
+    - name: Clone Full Dependencies
       shell: bash
       run: |
-        mkdir -p external/CLI11/include/CLI
-        mkdir -p external/simdjson
-        curl -L https://github.com/CLIUtils/CLI11/releases/download/v2.3.2/CLI11.hpp -o external/CLI11/include/CLI/CLI.hpp
-        curl -L https://raw.githubusercontent.com/yhirose/cpp-httplib/master/httplib.h -o external/httplib.h
-        curl -L https://raw.githubusercontent.com/simdjson/simdjson/master/singleheader/simdjson.h -o external/simdjson/simdjson.h
-        curl -L https://raw.githubusercontent.com/simdjson/simdjson/master/singleheader/simdjson.cpp -o external/simdjson/simdjson.cpp
+        mkdir -p external
+        # Clone the entire source for each package
+        git clone --depth 1 https://github.com/CLIUtils/CLI11.git external/CLI11
+        git clone --depth 1 https://github.com/yhirose/cpp-httplib.git external/
+        git clone --depth 1 https://github.com/simdjson/simdjson.git external/
 
     - name: Configure CMake
       run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
@@ -36,10 +35,10 @@ jobs:
     - name: Build
       run: cmake --build build --config Release
 
-    - name: Upload Artifact
+    - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: ascii-weather-${{ matrix.os }}
+        name: weather-${{ matrix.os }}
         path: |
           build/ascii-weather-tui
           build/Release/ascii-weather-tui.exe

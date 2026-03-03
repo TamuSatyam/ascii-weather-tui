@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
@@ -16,11 +17,16 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Install OpenSSL (Linux)
-      if: runner.os == 'Linux'
-      run: sudo apt-get update && sudo apt-get install -y libssl-dev
+    - name: Install System Dependencies
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          sudo apt-get update && sudo apt-get install -y libssl-dev
+        elif [ "$RUNNER_OS" == "Windows" ]; then
+          vcpkg install openssl:x64-windows
+        fi
 
-    - name: Build
+    - name: Configure & Build
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
         cmake --build build --config Release

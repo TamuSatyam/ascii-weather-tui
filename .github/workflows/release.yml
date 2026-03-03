@@ -3,8 +3,6 @@ name: Build & Release
 on:
   push:
     branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
   workflow_dispatch:
 
 jobs:
@@ -18,16 +16,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install System dependencies (Linux)
+    - name: Install OpenSSL (Linux)
       if: runner.os == 'Linux'
       run: sudo apt-get update && sudo apt-get install -y libssl-dev
 
-    - name: Manual Dependency Setup
+    - name: Setup Dependencies
       shell: bash
       run: |
         mkdir -p external/CLI11/include/CLI
         mkdir -p external/simdjson
-        
+        # Download exact files needed for the include paths in your code
         curl -L https://github.com/CLIUtils/CLI11/releases/download/v2.3.2/CLI11.hpp -o external/CLI11/include/CLI/CLI.hpp
         curl -L https://raw.githubusercontent.com/yhirose/cpp-httplib/master/httplib.h -o external/httplib.h
         curl -L https://raw.githubusercontent.com/simdjson/simdjson/master/singleheader/simdjson.h -o external/simdjson/simdjson.h
